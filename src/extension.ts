@@ -1,26 +1,86 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
-import * as vscode from 'vscode';
+import {
+  type ConfigurationChangeEvent,
+  commands,
+  window,
+  workspace,
+} from "vscode";
+import { UserFacingCommands } from "./commands";
+import { restart, start, stop } from "./lifecycle";
+import { logger } from "./logger";
+import { updateActiveProject } from "./project";
+import { state } from "./state";
+import { debounce } from "./utils";
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+/**
+ * This function is responsible for booting the PGLT extension. It is called
+ * when the extension is activated.
+ */
+export const createExtension = async () => {
+  await start();
+  registerUserFacingCommands();
+  listenForConfigurationChanges();
+  listenForActiveTextEditorChange();
+};
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "pglt-vscode" is now active!');
+/**
+ * This function is responsible for shutting down the PGLT extension. It is
+ * called when the extension is deactivated and will trigger a cleanup of the
+ * extension's state and resources.
+ */
+export const destroyExtension = async () => {
+  await stop();
+};
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('pglt-vscode.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from pglt-vscode!');
-	});
+const registerUserFacingCommands = () => {
+  state.context.subscriptions.push(
+    commands.registerCommand("pglt.start", UserFacingCommands.start),
+    commands.registerCommand("pglt.stop", UserFacingCommands.stop),
+    commands.registerCommand("pglt.restart", UserFacingCommands.restart),
+    commands.registerCommand("pglt.download", UserFacingCommands.download),
+    commands.registerCommand("pglt.reset", UserFacingCommands.reset)
+  );
 
-	context.subscriptions.push(disposable);
-}
+  logger.info("User-facing commands registered");
+};
 
-// This method is called when your extension is deactivated
-export function deactivate() {}
+/**
+ * This function sets up a listener for configuration changes in the `pglt`
+ * namespace. When a configuration change is detected, the extension is
+ * restarted to reflect the new configuration.
+ */
+const listenForConfigurationChanges = () => {
+  const debouncedConfigurationChangeHandler = debounce(
+    (event: ConfigurationChangeEvent) => {
+      if (event.affectsConfiguration("pglt")) {
+        logger.info("Configuration change detected.");
+        if (!["restarting", "stopping"].includes(state.state)) {
+          restart();
+        }
+      }
+    }
+  );
+
+  state.context.subscriptions.push(
+    workspace.onDidChangeConfiguration(debouncedConfigurationChangeHandler)
+  );
+
+  logger.info("Started listening for configuration changes");
+};
+
+/**
+ * This function listens for changes to the active text editor and updates the
+ * active project accordingly. This change is then reflected throughout the
+ * extension automatically. Notably, this triggers the status bar to update
+ * with the active project.
+ */
+const listenForActiveTextEditorChange = () => {
+  state.context.subscriptions.push(
+    window.onDidChangeActiveTextEditor((editor) => {
+      updateActiveProject(editor);
+    })
+  );
+
+  logger.info("Started listening for active text editor changes");
+
+  updateActiveProject(window.activeTextEditor);
+};
