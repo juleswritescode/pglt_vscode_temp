@@ -11,7 +11,7 @@ import type { ProjectDefinition } from "./project";
  *
  * @param key The key of the setting to retrieve
  */
-export const config = <T>(
+export const getConfig = <T>(
   key: string,
   options: {
     scope?: ConfigurationScope;
@@ -24,7 +24,7 @@ export const config = <T>(
  * TODO: Can the "state.activeProject" also refer to a workspace, or just to a workspace-folder?
  */
 export const isEnabledForFolder = (folder: WorkspaceFolder): boolean => {
-  return !!config<boolean>("enabled", { scope: folder.uri });
+  return !!getConfig<boolean>("enabled", { scope: folder.uri });
 };
 
 /**

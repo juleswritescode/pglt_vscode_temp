@@ -41,7 +41,7 @@ const _CONSTANTS = {
 
   activationTimestamp: Date.now(),
 
-  binaryName: (() => {
+  platformSpecificBinaryName: (() => {
     return `pglt${process.platform === "win32" ? ".exe" : ""}`;
   })(),
 
@@ -60,7 +60,7 @@ const _CONSTANTS = {
     return pkg;
   })(),
 
-  releasedAssetName: (() => {
+  platformSpecificReleasedAssetName: (() => {
     let assetName = "pglt";
 
     for (const [nodePlatform, rustPlatform] of Object.entries(
@@ -94,6 +94,12 @@ const _CONSTANTS = {
 
     return OperatingMode.SingleRoot;
   })(),
+
+  platformIdentifier: (() => {
+    return `${process.platform}-${process.arch}`;
+  })(),
+
+  globalStorageFolderForBinary: "global-bin",
 };
 
 export const CONSTANTS: typeof _CONSTANTS = new Proxy(_CONSTANTS, {

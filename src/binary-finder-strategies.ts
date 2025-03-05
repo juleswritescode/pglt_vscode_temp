@@ -4,16 +4,82 @@ import { delimiter, dirname, join } from "node:path";
 import { CONSTANTS } from "./constants";
 import { fileExists } from "./utils";
 import { createRequire } from "node:module";
+import { getConfig } from "./config";
 
 export interface BinaryFindStrategy {
   find(path?: Uri): Promise<Uri | null>;
 }
 
+/**
+ * The user can specify a PGLT binary in the VSCode settings.
+ *
+ * This can be done in two ways:
+ *
+ * 1. A static string that points to a binary. The extension will try to retrieve the binary from there.
+ *
+ * 2. An object with OS & arch combinations as keys and binary paths as values.
+ * The extension will try to retrieve the binary from the key matching the current OS and arch.
+ *
+ * Config Example:
+ * ```json
+ * {
+ *   "pglt.bin": {
+ *   	"linux-x64": "/path/to/pglt",
+ *    "linux-arm64-musl": "/path/to/pglt",
+ *    "darwin-arm64": "/path/to/pglt",
+ *    "win32-x64": "/path/to/pglt.exe"
+ *   }
+ * }
+ */
 export const vsCodeSettingsStrategy: BinaryFindStrategy = {
   async find(path?: Uri) {
-    /**
-     *
-     */
+    logger.debug("Trying to find PGLT binary via VSCode Settings");
+
+    type BinSetting = string | Record<string, string> | undefined;
+    let binSetting: BinSetting = getConfig("bin", {
+      scope: path,
+    });
+
+    if (!binSetting) {
+      logger.debug("Binary path not set in VSCode Settings");
+      return null;
+    }
+
+    if (typeof binSetting === "object") {
+      logger.debug(
+        "Binary Setting is an object, extracting relevant platform",
+        { binSetting }
+      );
+
+      const relevantSetting = binSetting[CONSTANTS.platformIdentifier];
+      if (relevantSetting) {
+        logger.debug(
+          "Found matching setting for platform in VSCode Settings, assigning as string",
+          {
+            setting: relevantSetting,
+            platformIdentifier: CONSTANTS.platformIdentifier,
+          }
+        );
+        binSetting = relevantSetting;
+      }
+    }
+
+    if (typeof binSetting === "string") {
+      logger.debug("Binary Setting is a string", { binSetting });
+
+      const resolvedPath = path
+        ? Uri.joinPath(path, binSetting).toString()
+        : binSetting;
+
+      const pglt = Uri.file(resolvedPath);
+
+      if (await fileExists(pglt)) {
+        return pglt;
+      }
+    }
+
+    logger.debug("No PGLT binary found in VSCode settings.");
+
     return null;
   },
 };
@@ -54,11 +120,14 @@ export const nodeModulesStrategy: BinaryFindStrategy = {
       )
     );
 
-    const pglt = Uri.file(join(binPackage, CONSTANTS.binaryName));
+    const pgltPath = join(binPackage, CONSTANTS.platformSpecificBinaryName);
+    const pglt = Uri.file(pgltPath);
 
     if (await fileExists(pglt)) {
       return pglt;
     }
+
+    logger.debug(`Unable to find PGLT in path ${pgltPath}`);
 
     return null;
   },
@@ -108,7 +177,7 @@ export const yarnPnpStrategy: BinaryFindStrategy = {
        */
       return Uri.file(
         yarnPnpApi.resolveRequest(
-          `${CONSTANTS.platformSpecificNodePackageName}/${CONSTANTS.binaryName}`,
+          `${CONSTANTS.platformSpecificNodePackageName}/${CONSTANTS.platformSpecificBinaryName}`,
           pgltPackage
         )
       );
@@ -132,7 +201,10 @@ export const pathEnvironmentVariableStrategy: BinaryFindStrategy = {
     }
 
     for (const dir of pathEnv.split(delimiter)) {
-      const pglt = Uri.joinPath(Uri.file(dir), CONSTANTS.binaryName);
+      const pglt = Uri.joinPath(
+        Uri.file(dir),
+        CONSTANTS.platformSpecificBinaryName
+      );
 
       if (await fileExists(pglt)) {
         return pglt;
