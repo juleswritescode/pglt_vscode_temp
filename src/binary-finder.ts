@@ -1,7 +1,7 @@
 import { RelativePattern, Uri, workspace } from "vscode";
 import {
   BinaryFindStrategy,
-  downloadBiomeStrategy,
+  downloadPgltStrategy,
   nodeModulesStrategy,
   pathEnvironmentVariableStrategy,
   vsCodeSettingsStrategy,
@@ -32,7 +32,7 @@ const GLOBAL_STRATEGIES: Strategy[] = [
       }),
   },
   {
-    strategy: downloadBiomeStrategy,
+    strategy: downloadPgltStrategy,
     onSuccess: (uri) =>
       logger.debug(`Found downloaded binary`, {
         path: uri.fsPath,
@@ -70,7 +70,7 @@ const LOCAL_STRATEGIES: Strategy[] = [
       }),
   },
   {
-    strategy: downloadBiomeStrategy,
+    strategy: downloadPgltStrategy,
     onSuccess: (uri) =>
       logger.debug(`Found downloaded binary`, {
         path: uri.fsPath,
@@ -115,10 +115,15 @@ export class BinaryFinder {
         continue;
       }
 
-      const binary = await strategy.find();
-      if (binary) {
-        onSuccess(binary);
-        return { bin: binary };
+      try {
+        const binary = await strategy.find();
+        if (binary) {
+          onSuccess(binary);
+          return { bin: binary };
+        }
+      } catch (err: unknown) {
+        logger.error(`${strategy.name} returned an error`, { err });
+        continue;
       }
     }
   }

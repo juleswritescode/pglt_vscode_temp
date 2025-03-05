@@ -1,12 +1,14 @@
-import { Uri } from "vscode";
+import { Uri, window } from "vscode";
 import { logger } from "./logger";
 import { delimiter, dirname, join } from "node:path";
 import { CONSTANTS } from "./constants";
 import { fileExists } from "./utils";
 import { createRequire } from "node:module";
 import { getConfig } from "./config";
+import { downloadPglt, getDownloadedVersion } from "./downloader";
 
 export interface BinaryFindStrategy {
+  name: string;
   find(path?: Uri): Promise<Uri | null>;
 }
 
@@ -32,6 +34,7 @@ export interface BinaryFindStrategy {
  * }
  */
 export const vsCodeSettingsStrategy: BinaryFindStrategy = {
+  name: "VSCode Settings Strategy",
   async find(path?: Uri) {
     logger.debug("Trying to find PGLT binary via VSCode Settings");
 
@@ -93,6 +96,7 @@ export const vsCodeSettingsStrategy: BinaryFindStrategy = {
  * In those node_modules, you should see the installed optional dependency.
  */
 export const nodeModulesStrategy: BinaryFindStrategy = {
+  name: "Node Modules Strategy",
   async find(path: Uri) {
     logger.debug("Trying to find PGLT binary in Node Modules");
 
@@ -134,6 +138,7 @@ export const nodeModulesStrategy: BinaryFindStrategy = {
 };
 
 export const yarnPnpStrategy: BinaryFindStrategy = {
+  name: "Yarn PnP Strategy",
   async find(path?: Uri) {
     logger.debug("Trying to find PGLT binary in Yarn Plug'n'Play");
 
@@ -190,6 +195,7 @@ export const yarnPnpStrategy: BinaryFindStrategy = {
 };
 
 export const pathEnvironmentVariableStrategy: BinaryFindStrategy = {
+  name: "PATH Env Var Strategy",
   async find() {
     const pathEnv = process.env.PATH;
 
@@ -217,8 +223,33 @@ export const pathEnvironmentVariableStrategy: BinaryFindStrategy = {
   },
 };
 
-export const downloadBiomeStrategy: BinaryFindStrategy = {
-  async find(path?: Uri) {
-    return null;
+export const downloadPgltStrategy: BinaryFindStrategy = {
+  name: "Download PGLT Strategy",
+  async find() {
+    logger.debug(`Trying to find downloaded PGLT binary`);
+
+    const downloadedVersion = await getDownloadedVersion();
+
+    if (downloadedVersion) {
+      logger.info(
+        `Using previously downloaded version ${downloadedVersion.version} at ${downloadedVersion.binPath.fsPath}`
+      );
+
+      return downloadedVersion.binPath;
+    }
+
+    const proceed =
+      (await window.showInformationMessage(
+        "You've opened a supported file outside of a PGLT project, and no installed PGLT binary could not be found on your system. Would you like to download and install PGLT?",
+        "Download and install",
+        "No"
+      )) === "Download and install";
+
+    if (!proceed) {
+      logger.debug(`Decided not to download binary, aborting`);
+      return null;
+    }
+
+    return await downloadPglt();
   },
 };
