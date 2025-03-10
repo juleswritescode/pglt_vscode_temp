@@ -26,6 +26,82 @@
           "description": "Whether to enable the PGLT extension.",
           "default": true,
           "scope": "resource"
+        },
+        "pglt.allowDownloadPrereleases": {
+          "type": "boolean",
+          "description": "Allows selecting prereleases when downloading the binary via this extension",
+          "default": false,
+          "scope": "resource"
+        },
+        "pglt.requireConfigFile": {
+          "type": "boolean",
+          "description": "Require a config file to be present at the root of a project in order to start an LSP Session.",
+          "default": false,
+          "scope": "resource"
+        },
+        "pglt.projects": {
+          "anyOf": [
+            {
+              "type": "array",
+              "description": "List of projects in which an independent PGLT Language Server should be started in a multi-root workspace.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "folder": {
+                    "type": "string",
+                    "description": "Name of the workspace folder in which the project is located."
+                  },
+                  "path": {
+                    "type": "string",
+                    "description": "Path (relative to the workspace folder) to the root of the project in which an independent PGLT Language Server should be started. The root of the workspace folder is used if left unspecified."
+                  }
+                },
+                "required": [
+                  "folder"
+                ]
+              }
+            },
+            {
+              "type": "array",
+              "description": "List of projects in which an independent PGLT Language Server should be started in a single-root workspace.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "Path to the root of the project in which an independent PGLT Language Server should be started."
+                  }
+                },
+                "required": [
+                  "path"
+                ]
+              }
+            }
+          ],
+          "scope": "resource"
+        },
+        "pglt.bin": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Path to the PGLT Language Server binary",
+              "examples": [
+                "/path/to/pglt"
+              ]
+            },
+            {
+              "type": "object",
+              "description": "Platform-specific paths to the PGLT Language Server binary",
+              "examples": [
+                {
+                  "linux-x64": "/path/to/pglt",
+                  "darwin-arm64": "/path/to/pglt",
+                  "win32-x64": "/path/to/pglt.exe"
+                }
+              ]
+            }
+          ],
+          "scope": "resource"
         }
       }
     }
@@ -48,5 +124,9 @@
     "@vscode/test-electron": "^2.4.1",
     "eslint": "^9.19.0",
     "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "vscode-languageclient": "9.0.1",
+    "vscode-uri": "3.1.0"
   }
 }

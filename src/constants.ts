@@ -100,6 +100,7 @@ const _CONSTANTS = {
   })(),
 
   globalStorageFolderForBinary: "global-bin",
+  globalStorageFolderTmp: "tmp-bin",
 };
 
 export const CONSTANTS: typeof _CONSTANTS = new Proxy(_CONSTANTS, {

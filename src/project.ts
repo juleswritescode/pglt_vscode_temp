@@ -6,18 +6,19 @@ import {
   workspace,
 } from "vscode";
 import { Utils } from "vscode-uri";
-import { supportedLanguageIdentifiers } from "./constants";
-import { debug } from "./logger";
+import { logger } from "./logger";
 import { state } from "./state";
 import {
   asyncFilter,
-  directoryExists,
+  dirExists,
   fileExists,
   getPathRelativeToWorkspaceFolder,
   getWorkspaceFolderByName,
   runningInSingleFileMode,
   shortURI,
 } from "./utils";
+import { getConfig } from "./config";
+import { join } from "path";
 
 export type Project = {
   folder?: WorkspaceFolder;
@@ -30,8 +31,6 @@ export type ProjectDefinition = {
 };
 
 /**
- * Updates the currently active project
- *
  * This function updates the currently active project based on the active text
  * editor by checking if the document in the active text editor is part of a
  * project. If it is, the active project is updated to reflect this change.
@@ -44,15 +43,12 @@ export const updateActiveProject = (editor: TextEditor | undefined) => {
     : undefined;
 
   state.hidden =
-    editor?.document === undefined ||
-    !supportedLanguageIdentifiers.includes(editor.document.languageId);
+    editor?.document === undefined || editor.document.languageId !== "sql";
 
   state.activeProject = project;
 };
 
 /**
- * Creates all projects
- *
  * This function creates all the projects according to the collected project
  * definitions. It is responsible for filtering out project definitions that
  * are invalid, such as those that reference non-existing directories or those
@@ -63,7 +59,7 @@ export const createProjects = async (): Promise<Project[]> => {
 
   // Filter out project definitions whose path does not exist on disk
   const projects = (await asyncFilter(definitions, async (definition) =>
-    definition.path ? await directoryExists(definition.path) : false
+    definition.path ? await dirExists(definition.path) : false
   )) as Project[];
 
   // Filter out project definitions for which the configuration file does not
@@ -75,7 +71,7 @@ export const createProjects = async (): Promise<Project[]> => {
  * Retrieves all project definitions with respect to the operating mode
  */
 const getProjectDefinitions = (): ProjectDefinition[] => {
-  debug("Retrieving project definitions");
+  logger.debug("Retrieving project definitions");
 
   if (runningInSingleFileMode()) {
     const definition = getProjectDefinitionForSingleFile();
@@ -89,14 +85,14 @@ const getProjectDefinitions = (): ProjectDefinition[] => {
  * Retrieves the project definition for a single file in single-file mode
  */
 const getProjectDefinitionForSingleFile = (): ProjectDefinition | undefined => {
-  debug("Looking for project definition for single file");
+  logger.debug("Looking for project definition for single file");
 
   const singleFileURI = window.activeTextEditor?.document.uri;
 
   // If the active text editor is not a file on disk, we abort.
   // Untitled files are handled by the global session.
   if (!singleFileURI || singleFileURI.scheme !== "file") {
-    debug("Could not create project definition for single file.", {
+    logger.debug("Could not create project definition for single file.", {
       uri: singleFileURI?.fsPath,
       scheme: singleFileURI?.scheme,
     });
@@ -107,7 +103,7 @@ const getProjectDefinitionForSingleFile = (): ProjectDefinition | undefined => {
     Utils.resolvePath(singleFileURI, "..").fsPath
   );
 
-  debug("Created project definition for single file", {
+  logger.debug("Created project definition for single file", {
     uri: singleFileURI.fsPath,
     parentFolderURI: parentFolderURI.fsPath,
   });
@@ -121,21 +117,21 @@ const getProjectDefinitionForSingleFile = (): ProjectDefinition | undefined => {
  * Retrieves the project definitions for the entire workspace
  */
 const getProjectDefinitionsForWorkspace = (): ProjectDefinition[] => {
-  debug("Retrieving project definitions for workspace");
+  logger.debug("Retrieving project definitions for workspace");
 
   const projectDefinitions: ProjectDefinition[] = [];
 
   for (const folder of workspace.workspaceFolders ?? []) {
     const definitions = getProjectDefinitionsForWorkspaceFolder(folder);
 
-    debug(
+    logger.debug(
       `Retrieved ${definitions.length} project definitions for workspace folder: "${folder.name}"`
     );
 
     projectDefinitions.push(...definitions);
   }
 
-  debug(
+  logger.debug(
     `Retrieved ${projectDefinitions.length} project definitions for workspace`
   );
 
@@ -150,7 +146,7 @@ const getProjectDefinitionsForWorkspace = (): ProjectDefinition[] => {
 const getProjectDefinitionsForWorkspaceFolder = (
   folder: WorkspaceFolder
 ): ProjectDefinition[] => {
-  debug(
+  logger.debug(
     `Retrieving project definitions for workspace folder: "${folder.name}"`
   );
 
@@ -160,16 +156,16 @@ const getProjectDefinitionsForWorkspaceFolder = (
   };
 
   // Project definitions can be specified at the workspace level or at the
-  // workspace folder level. Since the biome.projects configuration setting
+  // workspace folder level. Since the pglt.projects configuration setting
   // is an array, settings precedence dictates that the setting will be
   // overridden by the workspace folder level setting, if present.
   let rawProjectDefinitions =
-    workspace
-      .getConfiguration("biome", folder.uri)
-      .get<RawProjectDefinition[]>("projects") ?? [];
+    getConfig<RawProjectDefinition[]>("projects", {
+      scope: folder.uri,
+    }) ?? [];
 
   if (rawProjectDefinitions.length === 0) {
-    debug(
+    logger.debug(
       `Did not find any user-defined project definitions for workspace folder: "${folder.name}"`
     );
   }
@@ -200,7 +196,7 @@ const getProjectDefinitionsForWorkspaceFolder = (
       folder: folder.name,
     });
 
-    debug(
+    logger.debug(
       `Created a default project definition for root of workspace folder: "${folder.name}"`
     );
   }
@@ -227,24 +223,26 @@ const getProjectDefinitionsForWorkspaceFolder = (
 const configFileExistsIfRequired = async (
   definition: ProjectDefinition
 ): Promise<boolean> => {
-  debug("Checking if project requires configuration file", {
+  logger.debug("Checking if project requires configuration file", {
     projectPath: shortURI(definition),
   });
-
-  const required = workspace
-    .getConfiguration("biome", definition.path)
-    .get<boolean>("requireConfigFile");
+  const required =
+    getConfig<boolean>("requireConfigFile", { scope: definition.path }) ??
+    false;
 
   // The workspace folder does not require a configuration file for projects, so
   // we can return early.
   if (!required) {
-    debug("Project does not require configuration file, skipping check", {
-      projectPath: shortURI(definition),
-    });
+    logger.debug(
+      "Project does not require configuration file, skipping check",
+      {
+        projectPath: shortURI(definition),
+      }
+    );
     return true;
   }
 
-  debug("Project requires configuration file, checking if it exists", {
+  logger.debug("Project requires configuration file, checking if it exists", {
     projectPath: shortURI(definition),
   });
 
@@ -252,30 +250,29 @@ const configFileExistsIfRequired = async (
   // check if any of the accepted configuration files exist on disk under the project
   // directory.
   const candidates = definition.path
-    ? [
-        Uri.joinPath(definition.path, "biome.json"),
-        Uri.joinPath(definition.path, "biome.jsonc"),
-      ]
+    ? [Uri.joinPath(definition.path, "pglt.toml")]
     : [];
 
-  debug("Ensuring any of the candidate configuration files exist", {
+  logger.debug("Ensuring any of the candidate configuration files exist", {
     candidates: candidates.map((candidate) => candidate?.fsPath).join(", "),
   });
 
   // Filter out candidates that do not exist on disk
   const existing = await asyncFilter(candidates, fileExists);
 
-  debug("Filtered out non-existing configuration files", {
+  logger.debug("Filtered out non-existing configuration files", {
     existing: existing.map((file) => file.fsPath).join(", "),
   });
 
   // If at least one configuration file exists, we're good to go.
   if (existing.length > 0) {
-    debug("Found at least one configuration file for project. Continuing.");
+    logger.debug(
+      "Found at least one configuration file for project. Continuing."
+    );
     return true;
   }
 
-  debug("No configuration file found for project", {
+  logger.debug("No configuration file found for project", {
     projectPath: shortURI(definition),
   });
 

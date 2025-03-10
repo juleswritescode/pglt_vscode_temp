@@ -1,4 +1,4 @@
-import { downloadBiome } from "./downloader";
+import { downloadPglt } from "./downloader";
 import { restart, start, stop } from "./lifecycle";
 import { logger } from "./logger";
 import { state } from "./state";
@@ -26,7 +26,7 @@ export class UserFacingCommands {
    * in VS Code's global storage directory.
    */
   static async download() {
-    await downloadBiome();
+    await downloadPglt();
   }
 
   /**
@@ -36,7 +36,7 @@ export class UserFacingCommands {
     await stop();
     await clearTemporaryBinaries();
     await state.context.globalState.update("downloadedVersion", undefined);
-    logger.info("Biome extension was reset");
+    logger.info("PGLT extension was reset");
     await start();
   }
 }

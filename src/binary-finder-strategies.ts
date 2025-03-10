@@ -27,7 +27,6 @@ export interface BinaryFindStrategy {
  * {
  *   "pglt.bin": {
  *   	"linux-x64": "/path/to/pglt",
- *    "linux-arm64-musl": "/path/to/pglt",
  *    "darwin-arm64": "/path/to/pglt",
  *    "win32-x64": "/path/to/pglt.exe"
  *   }

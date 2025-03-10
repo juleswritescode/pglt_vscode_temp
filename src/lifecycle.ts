@@ -7,7 +7,7 @@ import {
 import { state } from "./state";
 
 /**
- * Starts the Biome extension
+ * Starts the PGLT extension
  */
 export const start = async () => {
   state.state = "starting";
@@ -17,7 +17,7 @@ export const start = async () => {
 };
 
 /**
- * Stops the Biome extension
+ * Stops the PGLT extension
  */
 export const stop = async () => {
   state.state = "stopping";
