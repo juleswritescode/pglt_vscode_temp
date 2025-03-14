@@ -17,6 +17,7 @@ const constants_1 = require("./constants");
 const createSession = async (project) => {
     const findResult = await binary_finder_1.BinaryFinder.find(project.path);
     if (!findResult) {
+        vscode_1.window.showErrorMessage(`Unable to find a PGLT binary. Read the docs for more various strategies to install a binary.`);
         logger_1.logger.error("Could not find the PGLT binary");
         return;
     }

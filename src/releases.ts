@@ -42,6 +42,13 @@ export async function getAllReleases(opts: {
 
     const results = (await response.json()) as Release[];
 
+    if (results.length === 0) {
+      window.showErrorMessage(
+        'No releases found on GitHub. Suggestion: Set "pglt.allowDownloadPrereleases" to `true` in your vscode settings.'
+      );
+      return [];
+    }
+
     releases.push(...results);
 
     if (page > 30) {

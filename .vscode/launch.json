@@ -45,6 +45,20 @@
       "sourceMapRenames": true
     },
     {
+      "name": "🧩 Debug Extension (Simple Project Global Binary)",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--disable-extensions",
+        "--extensionDevelopmentKind=node",
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--log=supabase.pglt-vscode:debug",
+        "${workspaceFolder}/test/fixtures/simple-project-global-bin"
+      ],
+      "outFiles": ["${workspaceFolder}/out/**/*.js"],
+      "sourceMapRenames": true
+    },
+    {
       "name": "🧩 Debug Extension (Workspace With Settings)",
       "type": "extensionHost",
       "request": "launch",

@@ -69,9 +69,11 @@ export const vsCodeSettingsStrategy: BinaryFindStrategy = {
     if (typeof binSetting === "string") {
       logger.debug("Binary Setting is a string", { binSetting });
 
-      const resolvedPath = path
+      const resolvedPath = binSetting.startsWith(".")
         ? Uri.joinPath(path, binSetting).toString()
         : binSetting;
+
+      logger.debug("Looking for binary at path", { resolvedPath });
 
       const pglt = Uri.file(resolvedPath);
 

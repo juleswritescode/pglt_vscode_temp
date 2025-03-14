@@ -29,7 +29,7 @@ const destroyExtension = async () => {
 };
 exports.destroyExtension = destroyExtension;
 const registerUserFacingCommands = () => {
-    state_1.state.context.subscriptions.push(vscode_1.commands.registerCommand("pglt.start", commands_1.UserFacingCommands.start), vscode_1.commands.registerCommand("pglt.stop", commands_1.UserFacingCommands.stop), vscode_1.commands.registerCommand("pglt.restart", commands_1.UserFacingCommands.restart), vscode_1.commands.registerCommand("pglt.download", commands_1.UserFacingCommands.download), vscode_1.commands.registerCommand("pglt.reset", commands_1.UserFacingCommands.reset));
+    state_1.state.context.subscriptions.push(vscode_1.commands.registerCommand("pglt.start", commands_1.UserFacingCommands.start), vscode_1.commands.registerCommand("pglt.stop", commands_1.UserFacingCommands.stop), vscode_1.commands.registerCommand("pglt.restart", commands_1.UserFacingCommands.restart), vscode_1.commands.registerCommand("pglt.download", commands_1.UserFacingCommands.download), vscode_1.commands.registerCommand("pglt.reset", commands_1.UserFacingCommands.reset), vscode_1.commands.registerCommand("pglt.currentVersion", commands_1.UserFacingCommands.currentVersion));
     logger_1.logger.info("User-facing commands registered");
 };
 /**

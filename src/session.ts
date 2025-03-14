@@ -36,6 +36,9 @@ export const createSession = async (
   const findResult = await BinaryFinder.find(project.path);
 
   if (!findResult) {
+    window.showErrorMessage(
+      `Unable to find a PGLT binary. Read the docs for more various strategies to install a binary.`
+    );
     logger.error("Could not find the PGLT binary");
     return;
   }

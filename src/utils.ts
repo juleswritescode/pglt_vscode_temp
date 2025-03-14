@@ -66,6 +66,24 @@ export async function clearTemporaryBinaries() {
   }
 }
 
+export async function clearGlobalBinaries() {
+  logger.debug("Clearing global binaries");
+
+  const binDirPath = Uri.joinPath(
+    state.context.globalStorageUri,
+    CONSTANTS.globalStorageFolderForBinary
+  );
+
+  if (await dirExists(binDirPath)) {
+    workspace.fs.delete(binDirPath, {
+      recursive: true,
+    });
+    logger.debug("Cleared global binaries.", {
+      path: binDirPath.fsPath,
+    });
+  }
+}
+
 /**
  * Substracts the second string from the first string
  */

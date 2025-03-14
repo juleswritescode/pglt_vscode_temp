@@ -53,9 +53,10 @@ exports.vsCodeSettingsStrategy = {
         }
         if (typeof binSetting === "string") {
             logger_1.logger.debug("Binary Setting is a string", { binSetting });
-            const resolvedPath = path
+            const resolvedPath = binSetting.startsWith(".")
                 ? vscode_1.Uri.joinPath(path, binSetting).toString()
                 : binSetting;
+            logger_1.logger.debug("Looking for binary at path", { resolvedPath });
             const pglt = vscode_1.Uri.file(resolvedPath);
             if (await (0, utils_1.fileExists)(pglt)) {
                 return pglt;

@@ -23,6 +23,10 @@ async function getAllReleases(opts) {
             return [];
         }
         const results = (await response.json());
+        if (results.length === 0) {
+            vscode_1.window.showErrorMessage('No releases found on GitHub. Suggestion: Set "pglt.allowDownloadPrereleases" to `true` in your vscode settings.');
+            return [];
+        }
         releases.push(...results);
         if (page > 30) {
             // sanity

@@ -4,6 +4,7 @@ exports.debounce = debounce;
 exports.fileExists = fileExists;
 exports.dirExists = dirExists;
 exports.clearTemporaryBinaries = clearTemporaryBinaries;
+exports.clearGlobalBinaries = clearGlobalBinaries;
 exports.subtractURI = subtractURI;
 exports.fileIsExecutable = fileIsExecutable;
 const vscode_1 = require("vscode");
@@ -58,6 +59,18 @@ async function clearTemporaryBinaries() {
             recursive: true,
         });
         logger_1.logger.debug("Cleared temporary binaries.", {
+            path: binDirPath.fsPath,
+        });
+    }
+}
+async function clearGlobalBinaries() {
+    logger_1.logger.debug("Clearing global binaries");
+    const binDirPath = vscode_1.Uri.joinPath(state_1.state.context.globalStorageUri, constants_1.CONSTANTS.globalStorageFolderForBinary);
+    if (await dirExists(binDirPath)) {
+        vscode_1.workspace.fs.delete(binDirPath, {
+            recursive: true,
+        });
+        logger_1.logger.debug("Cleared global binaries.", {
             path: binDirPath.fsPath,
         });
     }

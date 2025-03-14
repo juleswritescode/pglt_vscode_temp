@@ -33,8 +33,12 @@
         "command": "pglt.download"
       },
       {
-        "title": "PGLT: Troubleshoot - Reset",
+        "title": "PGLT: Hard Reset (Delete all temp & global binaries)",
         "command": "pglt.reset"
+      },
+      {
+        "title": "PGLT: Get Current Version",
+        "command": "pglt.currentVersion"
       }
     ],
     "configuration": {
@@ -63,7 +67,8 @@
               "type": "string",
               "description": "Path to the PGLT Language Server binary",
               "examples": [
-                "/path/to/pglt"
+                "/path/to/pglt",
+                "./path/to/pglt"
               ]
             },
             {
@@ -72,7 +77,7 @@
               "examples": [
                 {
                   "linux-x64": "/path/to/pglt",
-                  "darwin-arm64": "/path/to/pglt",
+                  "darwin-arm64": "./path/to/pglt",
                   "win32-x64": "/path/to/pglt.exe"
                 }
               ]

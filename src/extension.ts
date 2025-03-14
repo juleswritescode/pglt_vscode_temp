@@ -37,7 +37,11 @@ const registerUserFacingCommands = () => {
     commands.registerCommand("pglt.stop", UserFacingCommands.stop),
     commands.registerCommand("pglt.restart", UserFacingCommands.restart),
     commands.registerCommand("pglt.download", UserFacingCommands.download),
-    commands.registerCommand("pglt.reset", UserFacingCommands.reset)
+    commands.registerCommand("pglt.reset", UserFacingCommands.reset),
+    commands.registerCommand(
+      "pglt.currentVersion",
+      UserFacingCommands.currentVersion
+    )
   );
 
   logger.info("User-facing commands registered");
