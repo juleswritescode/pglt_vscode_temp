@@ -185,6 +185,7 @@ exports.pathEnvironmentVariableStrategy = {
             return null;
         }
         for (const dir of pathEnv.split(node_path_1.delimiter)) {
+            logger_1.logger.debug(`Checking ${dir}`);
             const pglt = vscode_1.Uri.joinPath(vscode_1.Uri.file(dir), constants_1.CONSTANTS.platformSpecificBinaryName);
             if (await (0, utils_1.fileExists)(pglt)) {
                 return pglt;

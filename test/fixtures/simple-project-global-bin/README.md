@@ -1,7 +1,7 @@
 # Simple Project
 
 A bread-and-butter project with a `pglt.toml` on top level and SQL files in the `test` folder.
-The .vscode settings point to a global binary.
+You should either let the `.vscode/settings.json` point to a binary OR add a folder containing the `pglt(.exe)` binary to your `PATH`.
 
 ## Expectations
 

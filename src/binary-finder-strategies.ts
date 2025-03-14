@@ -250,6 +250,8 @@ export const pathEnvironmentVariableStrategy: BinaryFindStrategy = {
     }
 
     for (const dir of pathEnv.split(delimiter)) {
+      logger.debug(`Checking ${dir}`);
+
       const pglt = Uri.joinPath(
         Uri.file(dir),
         CONSTANTS.platformSpecificBinaryName
