@@ -8,37 +8,12 @@ import {
   yarnPnpStrategy,
 } from "./binary-finder-strategies";
 import { logger } from "./logger";
-import { workerData } from "worker_threads";
 
 type Strategy = {
   strategy: BinaryFindStrategy;
   onSuccess: (u: Uri) => void;
   condition?: (path?: Uri) => Promise<boolean>;
 };
-
-const GLOBAL_STRATEGIES: Strategy[] = [
-  {
-    strategy: vsCodeSettingsStrategy,
-    onSuccess: (uri) =>
-      logger.debug(`Found Binary in VSCode Settings (pglt.lsp.bin)`, {
-        path: uri.fsPath,
-      }),
-  },
-  {
-    strategy: pathEnvironmentVariableStrategy,
-    onSuccess: (uri) =>
-      logger.debug(`Found Binary in PATH Environment Variable`, {
-        path: uri.fsPath,
-      }),
-  },
-  {
-    strategy: downloadPgltStrategy,
-    onSuccess: (uri) =>
-      logger.debug(`Found downloaded binary`, {
-        path: uri.fsPath,
-      }),
-  },
-];
 
 const LOCAL_STRATEGIES: Strategy[] = [
   {
@@ -89,17 +64,7 @@ const LOCAL_STRATEGIES: Strategy[] = [
 ];
 
 export class BinaryFinder {
-  static async findGlobally() {
-    const binary = await this.attemptFind(GLOBAL_STRATEGIES);
-
-    if (!binary) {
-      logger.debug("Unable to find binary globally.");
-    }
-
-    return binary;
-  }
-
-  static async findLocally(path: Uri) {
+  static async find(path: Uri) {
     const binary = await this.attemptFind(LOCAL_STRATEGIES, path);
 
     if (!binary) {
@@ -109,17 +74,21 @@ export class BinaryFinder {
     return binary;
   }
 
-  private static async attemptFind(strategies: Strategy[], path?: Uri) {
+  private static async attemptFind(strategies: Strategy[], path: Uri) {
     for (const { strategy, onSuccess, condition } of strategies) {
       if (condition && !(await condition(path))) {
         continue;
       }
 
       try {
-        const binary = await strategy.find();
+        const binary = await strategy.find(path);
         if (binary) {
           onSuccess(binary);
           return { bin: binary };
+        } else {
+          logger.info(`Binary not found with strategy`, {
+            strategy: strategy.name,
+          });
         }
       } catch (err: unknown) {
         logger.error(`${strategy.name} returned an error`, { err });

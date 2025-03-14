@@ -1,6 +1,11 @@
-import { StatusBarAlignment, type StatusBarItem, window } from "vscode";
+import {
+  StatusBarAlignment,
+  type StatusBarItem,
+  TextEditor,
+  window,
+} from "vscode";
 import { type State, state } from "./state";
-import { isEnabledForFolder, isEnabledGlobally } from "./config";
+import { isEnabledForFolder } from "./config";
 
 export type StatusBar = {
   item: StatusBarItem;
@@ -21,9 +26,9 @@ export const updateStatusBar = () => {
     return;
   }
 
-  const enabled = state.activeProject?.folder
-    ? isEnabledForFolder(state.activeProject.folder)
-    : isEnabledGlobally();
+  const enabled =
+    state.activeProject?.folder &&
+    isEnabledForFolder(state.activeProject.folder);
 
   if (!enabled || state.hidden) {
     statusBar.item.hide();
@@ -40,11 +45,15 @@ export const updateStatusBar = () => {
   statusBar.item.show();
 };
 
+export const updateHidden = (editor: TextEditor | undefined) => {
+  state.hidden =
+    editor?.document === undefined || editor.document.languageId !== "sql";
+};
+
 const getLspVersion = () => {
-  const session = state.activeProject
-    ? state.sessions.get(state.activeProject)
-    : state.globalSession;
-  return session?.client.initializeResult?.serverInfo?.version ?? "";
+  return (
+    state.activeSession?.client.initializeResult?.serverInfo?.version ?? ""
+  );
 };
 
 const getStateText = (): string => {

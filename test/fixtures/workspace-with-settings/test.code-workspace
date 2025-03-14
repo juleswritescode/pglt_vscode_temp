@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "path": "workspace-folder-1-missing-config"
+    },
+    {
+      "path": "workspace-folder-2"
+    }
+  ],
+  "settings": {
+    "pglt.requireConfigFile": true
+  }
+}

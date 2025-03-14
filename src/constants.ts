@@ -1,10 +1,13 @@
 import { workspace } from "vscode";
 
 export enum OperatingMode {
-  SingleFile = "single_file",
+  SingleFile = "single_file", // unsupported
   SingleRoot = "single_root",
   MultiRoot = "multi_root",
 }
+
+const npmPackageName = "pglt_testrelease-nightly-3";
+const binaryNpmPackageName = npmPackageName.replace("_", "-");
 
 /**
  * platform and arch are values injected into the node runtime.
@@ -12,21 +15,21 @@ export enum OperatingMode {
  */
 const PACKAGE_NAMES: Record<string, Record<string, string>> = {
   win32: {
-    x64: "pglt-x86_64-windows-msvc",
-    arm64: "pglt-aarch64-windows-msvc",
+    x64: `${binaryNpmPackageName}-cli-x86_64-windows-msvc`,
+    arm64: `${binaryNpmPackageName}-cli-aarch64-windows-msvc`,
   },
   darwin: {
-    x64: "pglt-x86_64-apple-darwin",
-    arm64: "pglt-aarch64-apple-darwin",
+    x64: `${binaryNpmPackageName}-cli-x86_64-apple-darwin`,
+    arm64: `${binaryNpmPackageName}-cli-aarch64-apple-darwin`,
   },
   linux: {
-    x64: "pglt-x86_64-linux-gnu",
-    arm64: "pglt-aarch64-linux-gnu",
+    x64: `${binaryNpmPackageName}-cli-x86_64-linux-gnu`,
+    arm64: `${binaryNpmPackageName}-cli-aarch64-linux-gnu`,
   },
 };
 
 const platformMappings: Record<string, string> = {
-  darwin: "darwin",
+  darwin: "apple-darwin",
   linux: "unknown-linux-gnu",
   win32: "pc-windows-msvc",
 };
@@ -48,7 +51,7 @@ const _CONSTANTS = {
   /**
    * The name under which pglt is published on npm.
    */
-  npmPackageName: "@pglt/pglt",
+  npmPackageName,
 
   platformSpecificNodePackageName: (() => {
     const platform: string = process.platform;
@@ -56,26 +59,28 @@ const _CONSTANTS = {
 
     const pkg = PACKAGE_NAMES[platform]?.[arch];
 
-    // TODO: what if we don't have an available package?
-    return pkg;
+    // TS won't pick up on the possibility of this being undefined
+    return pkg as string | undefined;
   })(),
 
   platformSpecificReleasedAssetName: (() => {
     let assetName = "pglt";
 
+    for (const [nodeArch, rustArch] of Object.entries(archMappings)) {
+      if (nodeArch === process.arch) {
+        assetName += `_${rustArch}`;
+      }
+    }
+
     for (const [nodePlatform, rustPlatform] of Object.entries(
       platformMappings
     )) {
       if (nodePlatform === process.platform) {
-        assetName += `_${rustPlatform}`;
+        assetName += `-${rustPlatform}`;
       }
     }
 
-    for (const [nodeArch, rustArch] of Object.entries(archMappings)) {
-      if (nodeArch === process.arch) {
-        assetName += `-${rustArch}`;
-      }
-    }
+    return assetName;
   })(),
 
   currentMachineSupported: (() => {

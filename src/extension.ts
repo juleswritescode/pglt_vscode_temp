@@ -7,17 +7,17 @@ import {
 import { UserFacingCommands } from "./commands";
 import { restart, start, stop } from "./lifecycle";
 import { logger } from "./logger";
-import { updateActiveProject } from "./project";
 import { state } from "./state";
 import { debounce } from "./utils";
+import { updateHidden } from "./status-bar";
 
 /**
  * This function is responsible for booting the PGLT extension. It is called
  * when the extension is activated.
  */
 export const createExtension = async () => {
-  await start();
   registerUserFacingCommands();
+  await start();
   listenForConfigurationChanges();
   listenForActiveTextEditorChange();
 };
@@ -76,11 +76,11 @@ const listenForConfigurationChanges = () => {
 const listenForActiveTextEditorChange = () => {
   state.context.subscriptions.push(
     window.onDidChangeActiveTextEditor((editor) => {
-      updateActiveProject(editor);
+      updateHidden(editor);
     })
   );
 
   logger.info("Started listening for active text editor changes");
 
-  updateActiveProject(window.activeTextEditor);
+  updateHidden(window.activeTextEditor);
 };

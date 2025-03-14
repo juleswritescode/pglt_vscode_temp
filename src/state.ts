@@ -13,16 +13,14 @@ export type State = {
     | "stopped"
     | "error";
 
-  sessions: Map<Project, Session>;
   activeProject?: Project;
-  globalSession?: Session;
+  activeSession?: Session;
   context: ExtensionContext;
   hidden: boolean;
 };
 
 const _state: State = {
   state: "initializing",
-  sessions: new Map(),
   hidden: false,
 } as State;
 

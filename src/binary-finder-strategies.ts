@@ -9,7 +9,7 @@ import { downloadPglt, getDownloadedVersion } from "./downloader";
 
 export interface BinaryFindStrategy {
   name: string;
-  find(path?: Uri): Promise<Uri | null>;
+  find(path: Uri): Promise<Uri | null>;
 }
 
 /**
@@ -34,7 +34,7 @@ export interface BinaryFindStrategy {
  */
 export const vsCodeSettingsStrategy: BinaryFindStrategy = {
   name: "VSCode Settings Strategy",
-  async find(path?: Uri) {
+  async find(path: Uri) {
     logger.debug("Trying to find PGLT binary via VSCode Settings");
 
     type BinSetting = string | Record<string, string> | undefined;
@@ -104,24 +104,57 @@ export const nodeModulesStrategy: BinaryFindStrategy = {
       return null;
     }
 
-    /**
-     * Create a scoped require function that can require modules from the
-     * package installed via npm.
-     *
-     * We're essentially searching for the installed package in the current dir, and requiring from its node_modules.
-     * `package.json` serves as a target to resolve the root of the package.
-     */
-    const requirePgltPackage = createRequire(
-      require.resolve(`${CONSTANTS.npmPackageName}/package.json`, {
-        paths: [path.fsPath], // note: global ~/.node_modules is always searched
-      })
-    );
+    const pgltPackageNameJson = `${CONSTANTS.npmPackageName}/package.json`;
+
+    logger.info(`Searching for node_modules package`, { pgltPackageNameJson });
+
+    let requirePgltPackage: NodeJS.Require;
+    try {
+      /**
+       * Create a scoped require function that can require modules from the
+       * package installed via npm.
+       *
+       * We're essentially searching for the installed package in the current dir, and requiring from its node_modules.
+       * `package.json` serves as a target to resolve the root of the package.
+       */
+      requirePgltPackage = createRequire(
+        require.resolve(pgltPackageNameJson, {
+          paths: [path.fsPath], // note: global ~/.node_modules is always searched
+        })
+      );
+    } catch (err: unknown) {
+      if (
+        err instanceof Error &&
+        err.message.toLowerCase().includes("cannot find module")
+      ) {
+        logger.debug(`User does not use node_modules`);
+        return null;
+      } else {
+        throw err;
+      }
+    }
+
+    logger.debug("Created require function!");
+
+    const packageName = CONSTANTS.platformSpecificNodePackageName;
+    if (packageName === undefined) {
+      logger.debug(
+        `No package for current platform available in node_modules`,
+        {
+          os: process.platform,
+          arch: process.arch,
+        }
+      );
+      return null;
+    }
+
+    logger.debug(`Resolving bin package at nested ${packageName}/package.json`);
 
     const binPackage = dirname(
-      requirePgltPackage.resolve(
-        `${CONSTANTS.platformSpecificNodePackageName}/package.json`
-      )
+      requirePgltPackage.resolve(`${packageName}/package.json`)
     );
+
+    logger.debug(`Resolved binpackage`, { binPackage });
 
     const pgltPath = join(binPackage, CONSTANTS.platformSpecificBinaryName);
     const pglt = Uri.file(pgltPath);
@@ -138,7 +171,7 @@ export const nodeModulesStrategy: BinaryFindStrategy = {
 
 export const yarnPnpStrategy: BinaryFindStrategy = {
   name: "Yarn PnP Strategy",
-  async find(path?: Uri) {
+  async find(path: Uri) {
     logger.debug("Trying to find PGLT binary in Yarn Plug'n'Play");
 
     if (!path) {
@@ -176,12 +209,21 @@ export const yarnPnpStrategy: BinaryFindStrategy = {
         continue;
       }
 
+      const packageName = CONSTANTS.platformSpecificNodePackageName;
+      if (packageName === undefined) {
+        logger.debug(`No package for current platform available in yarn pnp`, {
+          os: process.platform,
+          arch: process.arch,
+        });
+        return null;
+      }
+
       /**
        * Return URI to the platform-specific binary that the found main package depends on.
        */
       return Uri.file(
         yarnPnpApi.resolveRequest(
-          `${CONSTANTS.platformSpecificNodePackageName}/${CONSTANTS.platformSpecificBinaryName}`,
+          `${packageName}/${CONSTANTS.platformSpecificBinaryName}`,
           pgltPackage
         )
       );

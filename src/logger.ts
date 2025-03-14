@@ -25,7 +25,7 @@ class Logger {
     if (args) {
       message += `\n\t${Object.entries(args)
         .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
-        .join("\n\t")}`.trim();
+        .join("\n\t")}`;
     }
 
     switch (level) {

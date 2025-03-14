@@ -1,5 +1,6 @@
 {
   "name": "pglt-vscode",
+  "publisher": "supabase",
   "displayName": "pglt-vscode",
   "description": "Postgres Language Server right in your IDE.",
   "version": "0.0.1",
@@ -9,13 +10,31 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
-  "main": "./out/extension.js",
+  "main": "./out/index.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "contributes": {
     "commands": [
       {
-        "command": "pglt-vscode.helloWorld",
-        "title": "Hello World"
+        "title": "PGLT: Start",
+        "command": "pglt.start"
+      },
+      {
+        "title": "PGLT: Stop",
+        "command": "pglt.stop"
+      },
+      {
+        "title": "PGLT: Restart",
+        "command": "pglt.restart"
+      },
+      {
+        "title": "PGLT: Download CLI",
+        "command": "pglt.download"
+      },
+      {
+        "title": "PGLT: Troubleshoot - Reset",
+        "command": "pglt.reset"
       }
     ],
     "configuration": {
@@ -33,51 +52,9 @@
           "default": false,
           "scope": "resource"
         },
-        "pglt.requireConfigFile": {
-          "type": "boolean",
-          "description": "Require a config file to be present at the root of a project in order to start an LSP Session.",
-          "default": false,
-          "scope": "resource"
-        },
-        "pglt.projects": {
-          "anyOf": [
-            {
-              "type": "array",
-              "description": "List of projects in which an independent PGLT Language Server should be started in a multi-root workspace.",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "folder": {
-                    "type": "string",
-                    "description": "Name of the workspace folder in which the project is located."
-                  },
-                  "path": {
-                    "type": "string",
-                    "description": "Path (relative to the workspace folder) to the root of the project in which an independent PGLT Language Server should be started. The root of the workspace folder is used if left unspecified."
-                  }
-                },
-                "required": [
-                  "folder"
-                ]
-              }
-            },
-            {
-              "type": "array",
-              "description": "List of projects in which an independent PGLT Language Server should be started in a single-root workspace.",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "path": {
-                    "type": "string",
-                    "description": "Path to the root of the project in which an independent PGLT Language Server should be started."
-                  }
-                },
-                "required": [
-                  "path"
-                ]
-              }
-            }
-          ],
+        "pglt.configFile": {
+          "type": "string",
+          "description": "Path to the `pglt.toml` file. You don't need to set this if the file is on root level of your project.",
           "scope": "resource"
         },
         "pglt.bin": {
@@ -127,6 +104,7 @@
   },
   "dependencies": {
     "vscode-languageclient": "9.0.1",
-    "vscode-uri": "3.1.0"
+    "vscode-uri": "3.1.0",
+    "vscode": "1."
   }
 }

@@ -1,5 +1,4 @@
 import {
-  ConfigurationTarget,
   ProgressLocation,
   QuickPickItem,
   Uri,
@@ -12,6 +11,7 @@ import { CONSTANTS } from "./constants";
 import { fileExists } from "./utils";
 import { getConfig } from "./config";
 import { chmodSync } from "fs";
+import { getAllReleases } from "./releases";
 
 export async function downloadPglt(): Promise<Uri | null> {
   logger.debug(`Downloading PGLT`);
@@ -64,7 +64,9 @@ async function downloadPgltVersion(version: string): Promise<void> {
   try {
     await workspace.fs.writeFile(binPath, new Uint8Array(binary));
     chmodSync(binPath.fsPath, 0o755);
-    logger.info(`Downloaded PGLT ${version} to ${binPath.fsPath}`);
+    const successMsg = `Downloaded PGLT ${version} to ${binPath.fsPath}`;
+    logger.info(successMsg);
+    window.showInformationMessage(successMsg);
     state.context.globalState.update("downloadedVersion", version);
   } catch (error) {
     logger.error(`Failed to save downloaded binary`, { error });
@@ -88,8 +90,8 @@ export async function getDownloadedVersion(): Promise<{
   const binPath = getInstalledBinaryPath();
 
   if (await fileExists(binPath)) {
-    logger.debug(`Found already downloaded version and binary`, {
-      binPath,
+    logger.debug(`Found downloaded version and binary`, {
+      path: binPath.fsPath,
       version,
     });
 
@@ -99,10 +101,13 @@ export async function getDownloadedVersion(): Promise<{
     };
   }
 
-  logger.debug(`Downloaded version found, but binary does not exist.`, {
-    binPath,
-    version,
-  });
+  logger.info(
+    `Downloaded version found in global state context, but binary does not exist.`,
+    {
+      binPath,
+      version,
+    }
+  );
 
   return null;
 }
@@ -116,9 +121,18 @@ async function promptVersionToDownload() {
         .then((it) => it?.version)
         .catch(() => undefined);
 
+      logger.debug(`Retrieved downloaded version`, { downloadedVersion });
+
+      const withPrereleases =
+        getConfig<boolean>("allowDownloadPrereleases") ?? false;
+
       const availableVersions = await getAllReleases({
-        withPrereleases: getConfig("allowDownloadPrereleases") ?? false,
+        withPrereleases,
       }).catch(() => []);
+
+      logger.debug(`Found ${availableVersions.length} downloadable versions`, {
+        withPrereleases,
+      });
 
       const items: QuickPickItem[] = availableVersions.map((release, index) => {
         const descriptions = [];
@@ -150,62 +164,6 @@ async function promptVersionToDownload() {
     title: "Select PGLT version to download",
     placeHolder: "Select PGLT version to download",
   });
-}
-
-type Release = {
-  tag_name: string;
-  published_at: string;
-  draft: boolean;
-  prerelease: boolean;
-};
-
-async function getAllReleases(opts: {
-  withPrereleases: boolean;
-}): Promise<Release[]> {
-  let page = 1;
-  let perPage = 100;
-  let exhausted = false;
-
-  const releases = [];
-
-  while (!exhausted) {
-    const queryParams = new URLSearchParams();
-
-    queryParams.append("page", page.toString());
-    queryParams.append("per_page", perPage.toString());
-
-    const results = await fetch(
-      "https://api.github.com/repos/supabase-community/postgres_lsp",
-      {
-        method: "GET",
-        headers: {
-          "X-GitHub-Api-Version": "2022-11-28",
-        },
-      }
-    ).then((r) => r.json() as Promise<Release[]>);
-
-    releases.push(...results);
-
-    if (page > 30) {
-      // sanity
-      exhausted = true;
-    } else if (results.length < perPage) {
-      exhausted = true;
-    } else {
-      page++;
-    }
-  }
-
-  return releases
-    .filter(
-      (r) =>
-        !r.draft && // shouldn't be fetched without auth token, anyways
-        (opts.withPrereleases || !r.prerelease)
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
-    );
 }
 
 function getInstalledBinaryPath() {

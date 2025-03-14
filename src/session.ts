@@ -14,11 +14,10 @@ import {
   TransportKind,
 } from "vscode-languageclient/node";
 import { BinaryFinder } from "./binary-finder";
-import { isEnabledGlobally } from "./config";
 import { logger } from "./logger";
-import { type Project, createProjects } from "./project";
+import { getActiveProject, type Project } from "./project";
 import { state } from "./state";
-import { fileExists, fileIsExecutable, shortURI, subtractURI } from "./utils";
+import { fileExists, fileIsExecutable, subtractURI } from "./utils";
 import { CONSTANTS, OperatingMode } from "./constants";
 
 export type Session = {
@@ -32,16 +31,18 @@ export type Session = {
  * Creates a new Pglt LSP session
  */
 export const createSession = async (
-  project?: Project
+  project: Project
 ): Promise<Session | undefined> => {
-  const findResult = project
-    ? await BinaryFinder.findLocally(project.path)
-    : await BinaryFinder.findGlobally();
+  const findResult = await BinaryFinder.find(project.path);
 
   if (!findResult) {
     logger.error("Could not find the PGLT binary");
     return;
   }
+
+  logger.info("Copying binary to temp location", {
+    currentLocation: findResult.bin.fsPath,
+  });
 
   // Copy the binary to a temporary location, and run it from there
   // so that the original binary can be updated without locking issues.
@@ -142,76 +143,37 @@ const copyBinaryToTemporaryLocation = async (
 /**
  * Creates a new global session
  */
-export const createGlobalSessionWhenNecessary = async () => {
-  const createGlobalSessionIfNotExists = async () => {
-    if (state.globalSession) {
-      return;
-    }
-    state.globalSession = await createSession();
-    try {
-      await state.globalSession?.client.start();
-      logger.info("Created a global LSP session");
-    } catch (e) {
-      logger.error("Failed to create global LSP session", {
-        error: `${e}`,
-      });
-      state.globalSession?.client.dispose();
-      state.globalSession = undefined;
-    }
-  };
-
-  // If the editor has open Untitled documents, or VS Code User Data documents,
-  // we create a global session immeditaley so that the user can work with them.
-  if (
-    (isEnabledGlobally() &&
-      window.activeTextEditor?.document.uri.scheme === "untitled") ||
-    window.activeTextEditor?.document.uri.scheme === "vscode-userdata"
-  ) {
-    await createGlobalSessionIfNotExists();
+export const createActiveSession = async () => {
+  if (state.activeSession) {
+    return;
   }
 
-  window.onDidChangeActiveTextEditor(async (editor) => {
-    logger.debug("Active text editor changed.", {
-      editor: editor?.document.uri.fsPath,
+  const activeProject = await getActiveProject();
+
+  if (!activeProject) {
+    logger.info("No active project found. Aborting.");
+    return;
+  }
+
+  state.activeSession = await createSession(activeProject);
+
+  try {
+    await state.activeSession?.client.start();
+    logger.info("Created a global LSP session");
+  } catch (e) {
+    logger.error("Failed to create global LSP session", {
+      error: `${e}`,
     });
-    if (
-      (isEnabledGlobally() && editor?.document.uri.scheme === "untitled") ||
-      editor?.document.uri.scheme === "vscode-userdata"
-    ) {
-      await createGlobalSessionIfNotExists();
-    }
-  });
-};
-
-/**
- * Creates sessions for all projects
- */
-export const createProjectSessions = async () => {
-  const projects = await createProjects();
-  const sessions = new Map<Project, Session>([]);
-  for (const project of projects) {
-    const session = await createSession(project);
-    if (session) {
-      sessions.set(project, session);
-      await session.client.start();
-      logger.info("Created session for project.", {
-        project: shortURI(project),
-      });
-    } else {
-      logger.error("Failed to create session for project.", {
-        project: project.path.fsPath,
-      });
-    }
+    state.activeSession?.client.dispose();
+    state.activeSession = undefined;
   }
-
-  state.sessions = sessions;
 };
 
 /**
  * Creates a new PGLT LSP client
  */
-const createLanguageClient = (bin: Uri, project?: Project) => {
-  const args = ["lsp-proxy"];
+const createLanguageClient = (bin: Uri, project: Project) => {
+  const args = ["lsp-proxy", "--config-path", project.configPath.toString()];
 
   const serverOptions: ServerOptions = {
     command: bin.fsPath,

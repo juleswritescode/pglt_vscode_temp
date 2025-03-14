@@ -1,9 +1,5 @@
 import { logger } from "./logger";
-import {
-  createGlobalSessionWhenNecessary,
-  createProjectSessions,
-  destroySession,
-} from "./session";
+import { createActiveSession, destroySession } from "./session";
 import { state } from "./state";
 
 /**
@@ -41,10 +37,12 @@ export const restart = async () => {
 
 const doStart = async () => {
   try {
-    await createProjectSessions();
-    await createGlobalSessionWhenNecessary();
-  } catch (e) {
-    logger.error("Failed to start PGLT extension");
+    await createActiveSession();
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      logger.error(e.message);
+    }
+    logger.error("Failed to start PGLT extension", { error: e });
     state.state = "error";
   }
 };
@@ -57,13 +55,7 @@ const doStop = async () => {
   // LSP session is already stopped.
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  if (state.globalSession) {
-    destroySession(state.globalSession);
+  if (state.activeSession) {
+    destroySession(state.activeSession);
   }
-
-  for (const session of state.sessions.values()) {
-    await destroySession(session);
-  }
-
-  state.sessions.clear();
 };

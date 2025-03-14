@@ -1,9 +1,7 @@
-import { FileType, Uri, workspace, WorkspaceFolder } from "vscode";
+import { FileType, Uri, workspace } from "vscode";
 import { logger } from "./logger";
 import { state } from "./state";
-import { CONSTANTS, OperatingMode } from "./constants";
-import { Utils } from "vscode-uri";
-import { Project, ProjectDefinition } from "./project";
+import { CONSTANTS } from "./constants";
 import { accessSync, constants } from "node:fs";
 
 export function debounce<TArgs extends unknown[]>(
@@ -24,8 +22,12 @@ export async function fileExists(uri: Uri): Promise<boolean> {
     /** the file can also be a symlink, hence the bitwise operation */
     return (result.type & FileType.File) > 0;
   } catch (err: unknown) {
-    logger.debug(`Error verifying if file exists, uri: ${uri}, err: ${err}`);
-    return false;
+    if (err instanceof Error && err.message.includes("ENOENT")) {
+      return false;
+    } else {
+      logger.debug(`Error verifying if file exists, uri: ${uri}, err: ${err}`);
+      return false;
+    }
   }
 }
 
@@ -62,64 +64,6 @@ export async function clearTemporaryBinaries() {
       path: binDirPath.fsPath,
     });
   }
-}
-
-export async function asyncFilter<T>(
-  items: T[],
-  predicate: (item: T) => Promise<boolean>
-): Promise<T[]> {
-  const results = await Promise.all(items.map(predicate));
-  return items.filter((_, index) => results[index]);
-}
-
-export function getWorkspaceFolderByName(
-  name: string
-): WorkspaceFolder | undefined {
-  return workspace.workspaceFolders?.find((folder) => folder.name === name);
-}
-
-export function getPathRelativeToWorkspaceFolder(
-  folder: WorkspaceFolder,
-  path?: string
-): Uri {
-  return Uri.parse(Utils.joinPath(folder.uri, path ?? "").fsPath);
-}
-
-/**
- * Determines if the extension is running in single-file mode
- */
-export function runningInSingleFileMode(): boolean {
-  return workspace.workspaceFolders === undefined;
-}
-
-/**
- * Generates a short URI for display purposes
- *
- * This function generates a short URI for display purposes. It takes into
- * account the operating mode of the extension and the project folder name.
- *
- * This is primarily used for naming logging channels.
- *
- * @param project The project for which the short URI is generated
- *
- * @example "/hello-world" (in single-root mode)
- * @example "workspace-folder-1::/hello-world" (in multi-root mode)
- */
-export function shortURI(project: Project | ProjectDefinition): string {
-  if (!project.folder || !project.path) {
-    return "";
-  }
-
-  const uri = subtractURI(project.path, project.folder.uri);
-  if (!uri) {
-    return "";
-  }
-
-  const prefix =
-    CONSTANTS.operatingMode === OperatingMode.MultiRoot
-      ? `${project.folder.name}::`
-      : "";
-  return `${prefix}${uri.fsPath}`;
 }
 
 /**
