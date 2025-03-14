@@ -31,7 +31,7 @@
       "sourceMapRenames": true
     },
     {
-      "name": "🧩 Debug Extension (Simple Project)",
+      "name": "🧩 Debug Extension (Simple Project Download)",
       "type": "extensionHost",
       "request": "launch",
       "args": [
@@ -39,7 +39,7 @@
         "--extensionDevelopmentKind=node",
         "--extensionDevelopmentPath=${workspaceFolder}",
         "--log=supabase.pglt-vscode:debug",
-        "${workspaceFolder}/test/fixtures/simple-project"
+        "${workspaceFolder}/test/fixtures/simple-project-download"
       ],
       "outFiles": ["${workspaceFolder}/out/**/*.js"],
       "sourceMapRenames": true

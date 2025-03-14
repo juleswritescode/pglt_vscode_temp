@@ -9,4 +9,17 @@ The extension should recognize the `pglt.toml` file and connect with the right d
 
 ## Test protocol
 
-TODO
+### Via $PATH
+
+0. Follow the instructions in `GLOBAL_SETUP.md`.
+1. Make sure the `.vscode/settings.json` file does _not_ have a `pglt.bin` setting.
+2. Make sure you have a folder containing a `pglt(.exe)` binary in your $PATH.
+3. You should not be prompted for any binary installations when you start the extensions.
+4. The extension should work when you open the `src/test.sql` file.
+
+### Via VSCode Settings
+
+0. Follow the instructions in `GLOBAL_SETUP.md`.
+1. Make sure you have a valid `pglt.bin` configuration in your `.vscode/settings.json`.
+2. You should not be prompted for any binary installations.
+3. The extension should work when you open the `src/test.sql` file.

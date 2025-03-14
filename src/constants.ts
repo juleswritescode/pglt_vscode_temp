@@ -1,4 +1,5 @@
 import { workspace } from "vscode";
+import packageJson from "../package.json";
 
 export enum OperatingMode {
   SingleFile = "single_file", // unsupported
@@ -40,7 +41,7 @@ const archMappings: Record<string, string> = {
 };
 
 const _CONSTANTS = {
-  displayName: "pglt", // TODO: read from package.json
+  displayName: packageJson.name,
 
   activationTimestamp: Date.now(),
 

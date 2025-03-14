@@ -8,4 +8,7 @@ The extension should recognize the `pglt.toml` file and connect with the right d
 
 ## Test protocol
 
-TODO
+0. Follow the instructions in `GLOBAL_SETUP.md`.
+1. Run `npm install`.
+2. You shouldn't be prompted to download a file once you open the extension host.
+3. The extension should work as expected when you open the `src/test.sql` file.

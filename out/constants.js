@@ -1,7 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CONSTANTS = exports.OperatingMode = void 0;
 const vscode_1 = require("vscode");
+const package_json_1 = __importDefault(require("../package.json"));
 var OperatingMode;
 (function (OperatingMode) {
     OperatingMode["SingleFile"] = "single_file";
@@ -38,7 +42,7 @@ const archMappings = {
     x64: "x86_64",
 };
 const _CONSTANTS = {
-    displayName: "pglt", // TODO: read from package.json
+    displayName: package_json_1.default.name,
     activationTimestamp: Date.now(),
     platformSpecificBinaryName: (() => {
         return `pglt${process.platform === "win32" ? ".exe" : ""}`;

@@ -1,4 +1,4 @@
-import { Uri, type WorkspaceFolder, workspace } from "vscode";
+import { Uri, type WorkspaceFolder, window, workspace } from "vscode";
 import { fileExists } from "./utils";
 import { getConfig } from "./config";
 import { logger } from "./logger";
@@ -13,12 +13,25 @@ export async function getActiveProject(): Promise<Project | null> {
   const folders = workspace.workspaceFolders;
 
   if (!folders?.length) {
+    logger.warn(`No workspace folders. Single-file Mode?`);
     return null;
   }
 
-  const first = folders[0];
+  if (folders.length > 1) {
+    window.showErrorMessage(
+      "PGLT does not support Multi-Root workspace mode for now."
+    );
+    return null;
+  }
 
+  return getActiveProjectForSingleFolder(folders[0]);
+}
+
+async function getActiveProjectForSingleFolder(
+  first: WorkspaceFolder
+): Promise<Project | null> {
   let configPath: Uri;
+
   const userConfig = getConfig<string>("configFile", { scope: first.uri });
   if (userConfig) {
     logger.info("User has specified path to config file.", {

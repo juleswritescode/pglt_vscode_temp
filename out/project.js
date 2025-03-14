@@ -8,9 +8,16 @@ const logger_1 = require("./logger");
 async function getActiveProject() {
     const folders = vscode_1.workspace.workspaceFolders;
     if (!folders?.length) {
+        logger_1.logger.warn(`No workspace folders. Single-file Mode?`);
         return null;
     }
-    const first = folders[0];
+    if (folders.length > 1) {
+        vscode_1.window.showErrorMessage("PGLT does not support Multi-Root workspace mode for now.");
+        return null;
+    }
+    return getActiveProjectForSingleFolder(folders[0]);
+}
+async function getActiveProjectForSingleFolder(first) {
     let configPath;
     const userConfig = (0, config_1.getConfig)("configFile", { scope: first.uri });
     if (userConfig) {
