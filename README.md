@@ -1,71 +1,21 @@
-# pglt-vscode README
+# PGLT Extension for VS Code
 
-This is the README for your extension "pglt-vscode". After writing up a brief description, we recommend including the following sections.
+The **PGLT extension for Visual Studio Code** brings PostgreSQL inline suggestions, linting, and type checks to VSCode and VSCode-based editors.
 
-## Features
+## Installation
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+The PGLT extension for VS Code is not yet distributed but will soon be available via the Visual Studio Marketplace and the Open VSX Registry.
 
-For example if there is an image subfolder under your extension project workspace:
+## Architecture
 
-\!\[feature X\]\(images/feature-x.png\)
+The VSCode extension looks for the `pglt` binary and uses it to start an LSP background process. It then creates a VSCode LSP Client and connects it to the server.
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+It'll try five strategies to find the binary, in the following order:
 
-## Requirements
+1. The `pglt.bin` VSCode setting can point to a binary with relative or absolute paths.
+2. If you have installed pglt via node_modules, the extension will look for the matching binary in your `node_modules`.
+3. If you have installed pglt via Yarn Plug'n'Play, the extension will check your `.pnp.cjs` file for a binary.
+4. The extension will scan your $PATH for a `pglt` on Darwin/Linux or `pglt.exe` on Windows.
+5. If no binary will be found, you will be prompted to download a binary from `pglt`'s Github Releases. You can always download a CLI version via VSCode's Command Palette. (If you want to download prereleases, set `pglt.allowDownloadPrereleaes` in your VSCode settings.)
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+To connect to your database, `pglt` needs to read a `pglt.toml` config file. By default, the extension will look for that file in your repository. You can specify an alternative path via the `pglt.configFile` VSCode setting.
